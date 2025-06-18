@@ -339,29 +339,34 @@ public class Il2CppMetadata : ClassReadingBinaryReader
         }
     }
 
-    private void DecipherMetadataUsage()
-    {
-        if(metadataUsageLists == null || metadataUsagePairs == null)
-            throw new InvalidOperationException("Called DecipherMetadataUsage on v27 or newer metadata");
-        
-        metadataUsageDic = new();
-        for (var i = 1u; i <= 6u; i++)
-        {
-            metadataUsageDic[i] = new();
-        }
+private void DecipherMetadataUsage()
+{
+    if (metadataUsageLists == null || metadataUsagePairs == null)
+        throw new InvalidOperationException("Called DecipherMetadataUsage on v27 or newer metadata");
 
-        foreach (var metadataUsageList in metadataUsageLists)
+    metadataUsageDic = new();
+    for (var i = 1u; i <= 6u; i++)
+    {
+        metadataUsageDic[i] = new();
+    }
+
+    foreach (var metadataUsageList in metadataUsageLists)
+    {
+        for (var i = 0; i < metadataUsageList.count; i++)
         {
-            for (var i = 0; i < metadataUsageList.count; i++)
+            var offset = metadataUsageList.start + i;
+            if (offset >= metadataUsagePairs.Length)  // 增加越界检查
             {
-                var offset = metadataUsageList.start + i;
-                var metadataUsagePair = metadataUsagePairs[offset];
-                var usage = GetEncodedIndexType(metadataUsagePair.encodedSourceIndex);
-                var decodedIndex = GetDecodedMethodIndex(metadataUsagePair.encodedSourceIndex);
-                metadataUsageDic[usage][metadataUsagePair.destinationIndex] = decodedIndex;
+                LibLogger.Warn($"MetadataUsagePair index {offset} out of range (max {metadataUsagePairs.Length})");
+                continue;
             }
+            var metadataUsagePair = metadataUsagePairs[offset];
+            var usage = GetEncodedIndexType(metadataUsagePair.encodedSourceIndex);
+            var decodedIndex = GetDecodedMethodIndex(metadataUsagePair.encodedSourceIndex);
+            metadataUsageDic[usage][metadataUsagePair.destinationIndex] = decodedIndex;
         }
     }
+}
 
     public uint GetMaxMetadataUsages()
     {
